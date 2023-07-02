@@ -154,6 +154,8 @@ The devices below are fully feature supported by OpenRazer, which means all avai
 | Razer Mamba Wireless (Wired)                  |  1532:0073  |
 | Razer Pro Click (Receiver)                    |  1532:0077  |
 | Razer Viper                                   |  1532:0078  |
+| Razer Viper Mini Signature Edition (Wired)    |  1532:009E  |
+| Razer Viper Mini Signature Edition (Wireless) |  1532:009F  |
 | Razer Viper Ultimate (Wired)                  |  1532:007A  |
 | Razer Viper Ultimate (Wireless)               |  1532:007B  |
 | Razer DeathAdder V2 Pro (Wired)               |  1532:007C  |
