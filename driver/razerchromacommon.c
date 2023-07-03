@@ -1558,7 +1558,7 @@ struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step
  */
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step2(unsigned short pid)
 {
-struct razer_report report;
+    struct razer_report report;
 
     report = get_razer_report(0x00, 0x41, 0x03);
     report.arguments[0] = 0x01;

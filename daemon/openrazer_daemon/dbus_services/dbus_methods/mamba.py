@@ -372,9 +372,9 @@ def set_hyperpolling_wireless_dongle_indicator_led_mode(self, mode):
 def set_tracking_height(self, mode):
     """
     Set the height of the Smart Tracking system, takes in 1 char
-    1 = Low
-    2 = Med
-    3 = High
+    0 = Low
+    1 = Med
+    2 = High
 
     :type mode: char
     """
