@@ -312,8 +312,17 @@ def set_poll_rate(self, rate):
     """
     self.logger.debug("DBus call set_poll_rate")
 
+    # Modified to allow devices with a difference in allowed polling rates 
+    # between wired/wireless modes to not crash daemon on mode change
+
+    # Should probably make system to store previous rates by Product ID
     if rate not in self.POLL_RATES:
-        raise RuntimeError("Poll rate " + str(rate) + " is not allowed. Allowed values: " + str(self.POLL_RATES))
+        if rate > self.POLL_RATES[-1]:
+            self.logger.warning("Poll rate " + str(rate) + " is above allowed values: " + str(self.POLL_RATES) + ". Setting to max safe value")
+            rate = self.POLL_RATES[-1]
+        else:
+            self.logger.warning("Poll rate " + str(rate) + " is outside of Allowed values: " + str(self.POLL_RATES) + ". Setting to lowest safe value")
+            rate = self.POLL_RATES[1]
 
     driver_path = self.get_driver_path('poll_rate')
 
