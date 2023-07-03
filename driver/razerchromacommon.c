@@ -1558,7 +1558,7 @@ struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step
  */
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step2(unsigned short pid)
 {
-    struct razer_report report;
+struct razer_report report;
 
     report = get_razer_report(0x00, 0x41, 0x03);
     report.arguments[0] = 0x01;
@@ -1578,5 +1578,44 @@ struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_unpair(un
     report.arguments[0] = (pid >> 8) & 0xFF;
     report.arguments[1] = pid & 0xFF;
 
+    return report;
+}
+
+/**
+* Packet comes before Tracking Height Packet. Same Everytime. Some Sort of prep?
+**/
+struct razer_report razer_chroma_misc_set_tracking_height_prep(void)
+{
+
+    struct razer_report report = get_razer_report(0x0b, 0x03, 0x03);
+
+    report.arguments[0] = 0x00;
+    report.arguments[1] = 0x04;
+    report.arguments[2] = 0x00;
+
+    return report;
+}
+
+/**
+ * Set the tracking cutoff height for Razer Viper Mini SE (Maybe More?)
+**/
+struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode)
+{
+
+    // 0 = Low
+    // 1 = Med
+    // 2 = High
+
+    struct razer_report report = get_razer_report(0x0b, 0x0b, 0x04);
+
+    if(mode > 0x02) {
+        mode = 0x02;
+    }
+
+    report.arguments[0] = 0x00;
+    report.arguments[1] = 0x04;
+    report.arguments[2] = 0x01;
+    report.arguments[3] = mode;
+  
     return report;
 }

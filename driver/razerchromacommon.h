@@ -153,4 +153,6 @@ struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step2(unsigned short pid);
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_unpair(unsigned short pid);
 
+struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode);
+struct razer_report razer_chroma_misc_set_tracking_height_prep(void);
 #endif

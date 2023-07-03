@@ -4093,6 +4093,7 @@ static ssize_t razer_attr_write_backlight_matrix_effect_none(struct device *dev,
  * Write device file "hyperpolling_wireless_dongle_indicator_led_mode"
  */
 static ssize_t razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
     unsigned char mode = (unsigned char)simple_strtoul(buf, NULL, 10);
@@ -4113,6 +4114,46 @@ static ssize_t razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode(
 
     razer_send_payload(device, &request, &response);
 
+    return count;
+}
+/**
+ * Write Device file "tracking_height"
+ **/
+
+static ssize_t razer_attr_write_tracking_height(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+    unsigned char mode = (unsigned char)simple_strtoul(buf, NULL, 10);
+    struct razer_report request = {0};
+    struct razer_report response = {0};
+
+    request = razer_chroma_misc_set_tracking_height_prep();
+
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
+        request.transaction_id.id = 0x1F;
+        break;
+
+    default:
+        request.transaction_id.id = 0xFF;
+        break;
+    }
+
+    razer_send_payload(device, &request, &response);
+
+    request = razer_chroma_misc_set_tracking_height(mode);
+
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
+        request.transaction_id.id = 0x1F;
+        break;
+
+    default:
+        request.transaction_id.id = 0xFF;
+        break;
+    }
+
+    razer_send_payload(device, &request, &response);
     return count;
 }
 
@@ -4225,6 +4266,7 @@ static DEVICE_ATTR(logo_led_effect,           0660, razer_attr_read_logo_led_eff
 static DEVICE_ATTR(logo_matrix_effect_wave,        0220, NULL,                             razer_attr_write_logo_matrix_effect_wave);
 static DEVICE_ATTR(logo_matrix_effect_spectrum,    0220, NULL,                             razer_attr_write_logo_matrix_effect_spectrum);
 static DEVICE_ATTR(logo_matrix_effect_reactive,    0220, NULL,                             razer_attr_write_logo_matrix_effect_reactive);
+
 static DEVICE_ATTR(logo_matrix_effect_breath,      0220, NULL,                             razer_attr_write_logo_matrix_effect_breath);
 static DEVICE_ATTR(logo_matrix_effect_static,      0220, NULL,                             razer_attr_write_logo_matrix_effect_static);
 static DEVICE_ATTR(logo_matrix_effect_blinking,    0220, NULL,                             razer_attr_write_logo_matrix_effect_blinking);
@@ -4266,6 +4308,8 @@ static DEVICE_ATTR(backlight_matrix_effect_on,          0220, NULL,             
 static DEVICE_ATTR(hyperpolling_wireless_dongle_indicator_led_mode,             0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode);
 static DEVICE_ATTR(hyperpolling_wireless_dongle_pair,                           0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_pair);
 static DEVICE_ATTR(hyperpolling_wireless_dongle_unpair,                         0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_unpair);
+
+static DEVICE_ATTR(tracking_height,                     0220, NULL,                         razer_attr_write_tracking_height);
 
 #define REP4_DPI_UP  0x20
 #define REP4_DPI_DN  0x21
@@ -5465,7 +5509,6 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
         case USB_DEVICE_ID_RAZER_DEATHADDER_V2_X_HYPERSPEED:
         case USB_DEVICE_ID_RAZER_VIPER_V2_PRO_WIRED:
         case USB_DEVICE_ID_RAZER_VIPER_V2_PRO_WIRELESS:
-        case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRED:
         case USB_DEVICE_ID_RAZER_DEATHADDER_V3_PRO_WIRED:
         case USB_DEVICE_ID_RAZER_DEATHADDER_V3_PRO_WIRELESS:
         case USB_DEVICE_ID_RAZER_PRO_CLICK_MINI_RECEIVER:
@@ -5478,6 +5521,17 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_device_idle_time);
             break;
 
+        case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRED:
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_poll_rate);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_dpi);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_dpi_stages);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_level);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_status);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_low_threshold);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_device_idle_time);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_tracking_height);
+            break;
+
         case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_poll_rate);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_dpi);
@@ -5486,6 +5540,7 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_status);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_low_threshold);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_device_idle_time);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_tracking_height);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_hyperpolling_wireless_dongle_indicator_led_mode);
             break;
 
@@ -6332,7 +6387,6 @@ static void razer_mouse_disconnect(struct hid_device *hdev)
         case USB_DEVICE_ID_RAZER_DEATHADDER_V2_X_HYPERSPEED:
         case USB_DEVICE_ID_RAZER_VIPER_V2_PRO_WIRED:
         case USB_DEVICE_ID_RAZER_VIPER_V2_PRO_WIRELESS:
-        case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRED:
         case USB_DEVICE_ID_RAZER_DEATHADDER_V3_PRO_WIRED:
         case USB_DEVICE_ID_RAZER_DEATHADDER_V3_PRO_WIRELESS:
         case USB_DEVICE_ID_RAZER_PRO_CLICK_MINI_RECEIVER:
@@ -6345,6 +6399,17 @@ static void razer_mouse_disconnect(struct hid_device *hdev)
             device_remove_file(&hdev->dev, &dev_attr_device_idle_time);
             break;
 
+        case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRED:
+            device_remove_file(&hdev->dev, &dev_attr_poll_rate);
+            device_remove_file(&hdev->dev, &dev_attr_dpi);
+            device_remove_file(&hdev->dev, &dev_attr_dpi_stages);
+            device_remove_file(&hdev->dev, &dev_attr_charge_level);
+            device_remove_file(&hdev->dev, &dev_attr_charge_status);
+            device_remove_file(&hdev->dev, &dev_attr_charge_low_threshold);
+            device_remove_file(&hdev->dev, &dev_attr_device_idle_time);
+            device_remove_file(&hdev->dev, &dev_attr_tracking_height);
+            break;
+
         case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
             device_remove_file(&hdev->dev, &dev_attr_poll_rate);
             device_remove_file(&hdev->dev, &dev_attr_dpi);
@@ -6353,6 +6418,7 @@ static void razer_mouse_disconnect(struct hid_device *hdev)
             device_remove_file(&hdev->dev, &dev_attr_charge_status);
             device_remove_file(&hdev->dev, &dev_attr_charge_low_threshold);
             device_remove_file(&hdev->dev, &dev_attr_device_idle_time);
+            device_remove_file(&hdev->dev, &dev_attr_tracking_height);
             device_remove_file(&hdev->dev, &dev_attr_hyperpolling_wireless_dongle_indicator_led_mode);
             break;
 

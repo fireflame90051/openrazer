@@ -368,6 +368,22 @@ def set_hyperpolling_wireless_dongle_indicator_led_mode(self, mode):
     with open(driver_path, 'w') as driver_file:
         driver_file.write(str(mode))
 
+@endpoint('razer.device.misc', 'setTrackingHeight', in_sig='y')
+def set_tracking_height(self, mode):
+    """
+    Set the height of the Smart Tracking system, takes in 1 char
+    1 = Low
+    2 = Med
+    3 = High
+
+    :type mode: char
+    """
+    self.logger.debug("DBus call set_tracking_height")
+
+    driver_path = self.get_driver_path('tracking_height')
+
+    with open(driver_path, 'w') as driver_file:
+        driver_file.write(str(mode))
 
 @endpoint('razer.device.misc', 'setHyperPollingPair', in_sig='s')
 def set_hyperpolling_wireless_dongle_pair(self, pid):

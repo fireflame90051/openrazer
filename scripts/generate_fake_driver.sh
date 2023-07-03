@@ -113,6 +113,7 @@ declare -A files_metadata=(
     ["tilt_hwheel"]="rw;0"
     ["tilt_repeat"]="rw;0"
     ["tilt_repeat_delay"]="rw;0"
+    ["tracking_height"]="w;"
     ["reset_channels"]="w;1"
     ["channel1_size"]="rw;8"
     ["channel2_size"]="rw;8"
