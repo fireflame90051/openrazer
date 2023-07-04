@@ -377,6 +377,23 @@ def set_hyperpolling_wireless_dongle_indicator_led_mode(self, mode):
     with open(driver_path, 'w') as driver_file:
         driver_file.write(str(mode))
 
+@endpoint('razer.device.misc', 'getHyperPollingLED', out_sig='y')
+def get_hyperpolling_wireless_dongle_indicator_led_mode(self):
+    """
+    Get the function of the LED on the dongle
+    1 = Connection Status (green if connected to mouse)
+    2 = Battery Status (green if high battery, yellow if medium battery, red if low battery)
+    3 = Battery Warning (red if low battery, off otherwise)
+    """
+    self.logger.debug("DBus call get_hyperpolling_wireless_dongle_indicator_led_mode")
+
+    driver_path = self.get_driver_path('hyperpolling_wireless_dongle_indicator_led_mode')
+
+    with open(driver_path, 'r') as driver_file:
+        result = driver_file.read()
+        result = int(result.strip())
+    return result
+
 @endpoint('razer.device.misc', 'setTrackingHeight', in_sig='y')
 def set_tracking_height(self, mode):
     """
@@ -434,7 +451,7 @@ def set_async_lift(self, lift):
 
     :type mode: char
     """
-    self.logger.debug("DBus call set_async_cutoff_lift")
+    self.logger.debug("DBus call set_async_lift")
 
     driver_path = self.get_driver_path('async_cutoff_lift')
 
@@ -449,7 +466,7 @@ def set_async_land(self, land):
     
     :type mode: char
     """
-    self.logger.debug("DBus call set_async_cutoff_land")
+    self.logger.debug("DBus call set_async_land")
 
     driver_path = self.get_driver_path('async_cutoff_land')
 
@@ -462,7 +479,7 @@ def get_async_lift(self):
     Gets the height of the async cutoff lift
     1 - 25 mm
     """
-    self.logger.debug("DBus call get_async_cutoff_lift")
+    self.logger.debug("DBus call get_async_lift")
 
     driver_path = self.get_driver_path('async_cutoff_lift')
 
@@ -478,7 +495,7 @@ def get_async_land(self):
     Gets the height of the async cutoff land           
     1 - 25 mm
     """
-    self.logger.debug("DBus call get_async_cutoff_land")
+    self.logger.debug("DBus call get_async_land")
 
     driver_path = self.get_driver_path('async_cutoff_land')
 
