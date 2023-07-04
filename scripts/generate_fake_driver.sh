@@ -1,6 +1,8 @@
 #!/bin/bash
 
 declare -A files_metadata=(
+    ["async_cutoff_lift"]="rw;"
+    ["async_cutoff_land"]="rw;"
     ["backlight_led_brightness"]="rw;0"
     ["backlight_led_state"]="rw;0"
     ["backlight_matrix_effect_breath"]="w;"
@@ -41,7 +43,7 @@ declare -A files_metadata=(
     ["fully_charged_matrix_effect_static"]="w;"
     ["fully_charged_matrix_effect_wave"]="w;"
     ["game_led_state"]="rw;0"
-    ["hyperpolling_wireless_dongle_indicator_led_mode"]="w;"
+    ["hyperpolling_wireless_dongle_indicator_led_mode"]="rw;"
     ["hyperpolling_wireless_dongle_pair"]="w;"
     ["hyperpolling_wireless_dongle_unpair"]="w;"
     ["keyswitch_optimization"]="rw;0"

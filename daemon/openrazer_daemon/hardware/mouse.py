@@ -1561,7 +1561,8 @@ class RazerViperMiniSEWireless(__RazerDevice):
     METHODS = ['get_device_type_mouse', 'max_dpi', 'get_dpi_xy', 'set_dpi_xy', 'get_dpi_stages', 'set_dpi_stages',
                'get_poll_rate', 'set_poll_rate', 'get_supported_poll_rates',
                'get_battery', 'is_charging', 'get_idle_time', 'set_idle_time', 'set_low_battery_threshold',
-               'set_hyperpolling_wireless_dongle_indicator_led_mode','set_tracking_height']
+               'get_async_lift', 'get_async_land', 'set_async_lift', 'set_async_land', 'set_tracking_height',
+               'set_hyperpolling_wireless_dongle_indicator_led_mode',]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1593,7 +1594,8 @@ class RazerViperMiniSEWired(__RazerDevice):
     METHODS = ['get_device_type_mouse', 'max_dpi', 'get_dpi_xy', 'set_dpi_xy',
                'get_dpi_stages', 'set_dpi_stages',
                'get_poll_rate', 'set_poll_rate', 'get_supported_poll_rates',
-               'get_battery', 'is_charging', 'get_idle_time', 'set_idle_time', 'set_low_battery_threshold',]
+               'get_battery', 'is_charging', 'get_idle_time', 'set_idle_time', 'set_low_battery_threshold',
+               'get_async_lift', 'get_async_land', 'set_async_lift', 'set_async_land', 'set_tracking_height',]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

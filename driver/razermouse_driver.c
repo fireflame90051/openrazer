@@ -741,8 +741,6 @@ static ssize_t razer_attr_write_matrix_effect_custom(struct device *dev, struct 
     case USB_DEVICE_ID_RAZER_DEATHADDER_V2_MINI:
     case USB_DEVICE_ID_RAZER_VIPER:
     case USB_DEVICE_ID_RAZER_VIPER_MINI:
-    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRED:
-    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
     case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRED:
     case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS:
         request = razer_chroma_extended_matrix_effect_custom_frame();
@@ -4116,6 +4114,31 @@ static ssize_t razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode(
 
     return count;
 }
+
+static ssize_t razer_attr_read_hyperpolling_wireless_dongle_indicator_led_mode(struct device *dev, struct device_attribute *attr, char *buf)
+
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+    struct razer_report request = {0};
+    struct razer_report response = {0};
+
+    request = razer_chroma_misc_get_hyperpolling_wireless_dongle_indicator_led_mode();
+
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
+        request.transaction_id.id = 0x1F;
+        break;
+
+    default:
+        request.transaction_id.id = 0xFF;
+        break;
+    }
+
+    razer_send_payload(device, &request, &response);
+
+    return sprintf(buf, "%d\n", response.arguments[0]);
+}
+
 /**
  * Write Device file "tracking_height"
  **/
@@ -4124,37 +4147,164 @@ static ssize_t razer_attr_write_tracking_height(struct device *dev, struct devic
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
     unsigned char mode = (unsigned char)simple_strtoul(buf, NULL, 10);
+    unsigned char id = 0xFF;
+    struct razer_report request = {0};
+    struct razer_report response = {0};
+ 
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
+        id = 0x1F;
+        break;
+
+    default:
+        id = 0xFF;
+        break;
+    }
+
+    //ensure async cutoff is disabled
+    request = razer_chroma_misc_set_async_state(0x00);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    //set the actual tracking height
+    request = razer_chroma_misc_set_tracking_height(mode, 0);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    device->async.enable = 0;
+
+    return count;
+}
+
+static ssize_t razer_attr_write_async_lift(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+    unsigned char lift = (unsigned char)simple_strtoul(buf, NULL, 10);
+    
+    unsigned char id = 0xFF;
     struct razer_report request = {0};
     struct razer_report response = {0};
 
-    request = razer_chroma_misc_set_tracking_height_prep();
-
     switch (device->usb_pid) {
     case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
-        request.transaction_id.id = 0x1F;
+        id = 0x1F;
         break;
 
     default:
-        request.transaction_id.id = 0xFF;
+        id = 0xFF;
         break;
     }
 
-    razer_send_payload(device, &request, &response);
-
-    request = razer_chroma_misc_set_tracking_height(mode);
-
-    switch (device->usb_pid) {
-    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
-        request.transaction_id.id = 0x1F;
-        break;
-
-    default:
-        request.transaction_id.id = 0xFF;
-        break;
+    // Ensure lift is within bounds before setting anything
+    if (lift < 0x01) {
+        lift = 0x01;
+    }
+    if (lift > 0x19) {
+        lift = 0x19;
     }
 
+    //Dont set a lift lower than current land
+    if (lift <= device->async.land) {
+        device->async.land = lift - 1;
+    }
+
+    //store value for later
+    device->async.lift = lift;
+
+    //ensure async cutoff is enabled
+    request = razer_chroma_misc_set_async_state(0x01);
+    request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
+
+    //disable smart tracking
+    request = razer_chroma_misc_set_tracking_height(0x00, 1);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    //set land
+    request = razer_chroma_misc_set_async_cutoff_height(device->async.lift, device->async.land);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    device->async.enable = 1;
+
     return count;
+}
+
+static ssize_t razer_attr_read_async_lift(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+
+    if (device->async.enable == 1) {
+        return sprintf(buf, "%d\n", device->async.lift);
+    }
+    else {
+        //Placeholder for a value representing disabled async cutoff
+        return sprintf(buf, "%d\n", 0xFF);
+    }
+}
+
+static ssize_t razer_attr_write_async_land(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+    unsigned char land = (unsigned char)simple_strtoul(buf, NULL, 10);
+    unsigned char id = 0xFF;
+    struct razer_report request = {0};
+    struct razer_report response = {0};
+
+    //Ensure land is within bounds before setting anything
+    if (land > 0x18) {
+        land = 0x18;
+    }
+
+    //Dont set a land distance higher than the lift distance
+    if (land >= device->async.lift) {
+        device->async.lift = land + 1;
+    }
+
+    //store value for later
+    device->async.land = land;
+
+    switch (device->usb_pid) {
+    case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
+        id = 0x1F;
+        break;
+
+    default:
+        id = 0xFF;
+        break;
+    }
+
+    //ensure async cutoff is enabled
+    request = razer_chroma_misc_set_async_state(0x01);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    //disable smart tracking
+    request = razer_chroma_misc_set_tracking_height(0x00, 1);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    //set lift
+    request = razer_chroma_misc_set_async_cutoff_height(device->async.lift, device->async.land);
+    request.transaction_id.id = id;
+    razer_send_payload(device, &request, &response);
+
+    device->async.enable = 1;
+
+    return count;
+}
+
+static ssize_t razer_attr_read_async_land(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+    if (device->async.enable == 1) {
+        return sprintf(buf, "%d\n", device->async.land);
+    }
+    else {
+        //Placeholder for a value representing disabled async cutoff
+        return sprintf(buf, "%d\n", 0xFF);
+    }
 }
 
 /**
@@ -4305,11 +4455,13 @@ static DEVICE_ATTR(backlight_matrix_effect_none,        0220, NULL,             
 static DEVICE_ATTR(backlight_matrix_effect_on,          0220, NULL,                         razer_attr_write_backlight_matrix_effect_on);
 
 // For HyperPolling Wireless Dongle
-static DEVICE_ATTR(hyperpolling_wireless_dongle_indicator_led_mode,             0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode);
+static DEVICE_ATTR(hyperpolling_wireless_dongle_indicator_led_mode,             0660, razer_attr_read_hyperpolling_wireless_dongle_indicator_led_mode, razer_attr_write_hyperpolling_wireless_dongle_indicator_led_mode);
 static DEVICE_ATTR(hyperpolling_wireless_dongle_pair,                           0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_pair);
 static DEVICE_ATTR(hyperpolling_wireless_dongle_unpair,                         0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_unpair);
 
-static DEVICE_ATTR(tracking_height,                     0220, NULL,                         razer_attr_write_tracking_height);
+static DEVICE_ATTR(tracking_height,                     0220, NULL, razer_attr_write_tracking_height);
+static DEVICE_ATTR(async_cutoff_lift,                   0660, razer_attr_read_async_lift, razer_attr_write_async_lift);
+static DEVICE_ATTR(async_cutoff_land,		        0660, razer_attr_read_async_land, razer_attr_write_async_land);
 
 #define REP4_DPI_UP  0x20
 #define REP4_DPI_DN  0x21
@@ -4710,6 +4862,10 @@ static void razer_mouse_init(struct razer_mouse_device *dev, struct usb_interfac
     dev->tilt_hwheel = 1;
     dev->tilt_repeat_delay = 250;
     dev->tilt_repeat = 33;
+
+    // Async Cutoff
+    dev->async.lift = 0x01;
+    dev->async.land = 0x00;
 }
 
 /**
@@ -5530,6 +5686,8 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_low_threshold);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_device_idle_time);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_tracking_height);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_async_cutoff_lift);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_async_cutoff_land);
             break;
 
         case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
@@ -5541,6 +5699,8 @@ static int razer_mouse_probe(struct hid_device *hdev, const struct hid_device_id
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_charge_low_threshold);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_device_idle_time);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_tracking_height);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_async_cutoff_lift);
+            CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_async_cutoff_land);
             CREATE_DEVICE_FILE(&hdev->dev, &dev_attr_hyperpolling_wireless_dongle_indicator_led_mode);
             break;
 
@@ -6408,6 +6568,8 @@ static void razer_mouse_disconnect(struct hid_device *hdev)
             device_remove_file(&hdev->dev, &dev_attr_charge_low_threshold);
             device_remove_file(&hdev->dev, &dev_attr_device_idle_time);
             device_remove_file(&hdev->dev, &dev_attr_tracking_height);
+            device_remove_file(&hdev->dev, &dev_attr_async_cutoff_lift);
+            device_remove_file(&hdev->dev, &dev_attr_async_cutoff_land);
             break;
 
         case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
@@ -6419,6 +6581,8 @@ static void razer_mouse_disconnect(struct hid_device *hdev)
             device_remove_file(&hdev->dev, &dev_attr_charge_low_threshold);
             device_remove_file(&hdev->dev, &dev_attr_device_idle_time);
             device_remove_file(&hdev->dev, &dev_attr_tracking_height);
+            device_remove_file(&hdev->dev, &dev_attr_async_cutoff_lift);
+            device_remove_file(&hdev->dev, &dev_attr_async_cutoff_land);
             device_remove_file(&hdev->dev, &dev_attr_hyperpolling_wireless_dongle_indicator_led_mode);
             break;
 

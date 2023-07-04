@@ -424,3 +424,66 @@ def set_hyperpolling_wireless_dongle_unpair(self, pid):
 
     with open(driver_path, 'w') as driver_file:
         driver_file.write(pid)
+
+
+@endpoint('razer.device.misc', 'setAsyncCutoffLift', in_sig='y')
+def set_async_lift(self, lift):
+    """
+    Set the height of the async cutoff lift, takes in 1 char
+    1 - 25 mm
+
+    :type mode: char
+    """
+    self.logger.debug("DBus call set_async_cutoff_lift")
+
+    driver_path = self.get_driver_path('async_cutoff_lift')
+
+    with open(driver_path, 'w') as driver_file:
+        driver_file.write(str(lift))
+
+@endpoint('razer.device.misc', 'setAsyncCutoffLand', in_sig='y')
+def set_async_land(self, land):
+    """
+    Set the height of the async cutoff land, takes in 1 char
+    0 - 24 (mm)
+    
+    :type mode: char
+    """
+    self.logger.debug("DBus call set_async_cutoff_land")
+
+    driver_path = self.get_driver_path('async_cutoff_land')
+
+    with open(driver_path, 'w') as driver_file:
+        driver_file.write(str(land))
+
+@endpoint('razer.device.misc', 'getAsyncCutoffLift', out_sig='y')
+def get_async_lift(self):
+    """
+    Gets the height of the async cutoff lift
+    1 - 25 mm
+    """
+    self.logger.debug("DBus call get_async_cutoff_lift")
+
+    driver_path = self.get_driver_path('async_cutoff_lift')
+
+    with open(driver_path, 'r') as driver_file:
+        result = driver_file.read()
+        result = int(result.strip())
+
+    return result;
+
+@endpoint('razer.device.misc', 'getAsyncCutoffLand', out_sig='y')
+def get_async_land(self):
+    """
+    Gets the height of the async cutoff land           
+    1 - 25 mm
+    """
+    self.logger.debug("DBus call get_async_cutoff_land")
+
+    driver_path = self.get_driver_path('async_cutoff_land')
+
+    with open(driver_path, 'r') as driver_file:
+        result = driver_file.read()
+        result = int(result.strip())
+
+    return result;

@@ -149,10 +149,13 @@ struct razer_report razer_chroma_misc_set_scroll_smart_reel(bool smart_reel);
 struct razer_report razer_chroma_misc_get_scroll_smart_reel(void);
 
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_indicator_led_mode(unsigned char mode);
+struct razer_report razer_chroma_misc_get_hyperpolling_wireless_dongle_indicator_led_mode(void);
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step1(unsigned short pid);
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_pair_step2(unsigned short pid);
 struct razer_report razer_chroma_misc_set_hyperpolling_wireless_dongle_unpair(unsigned short pid);
 
-struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode);
-struct razer_report razer_chroma_misc_set_tracking_height_prep(void);
+struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode, bool disable);
+struct razer_report razer_chroma_misc_set_async_state(unsigned char mode);
+struct razer_report razer_chroma_misc_set_smart_track_disable(void);
+struct razer_report razer_chroma_misc_set_async_cutoff_height(unsigned char lift, unsigned char land);
 #endif
