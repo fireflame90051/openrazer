@@ -3841,7 +3841,7 @@ static ssize_t razer_attr_write_logo_matrix_effect_wave(struct device *dev, stru
     return razer_attr_write_matrix_effect_wave_common(dev, attr, buf, count, LOGO_LED);
 }
 
-/**
+/**   device->tracking.async_enable = 1;
  * Write device file "logo_mode_spectrum" (for extended mouse matrix effects)
  *
  * Spectrum effect mode is activated whenever the file is written to
@@ -4150,7 +4150,11 @@ static ssize_t razer_attr_write_tracking_height(struct device *dev, struct devic
     unsigned char id = 0xFF;
     struct razer_report request = {0};
     struct razer_report response = {0};
- 
+
+    //update global values
+    device->tracking.smart_tracking = mode;
+    device->tracking.async_enable = 0x00;
+
     switch (device->usb_pid) {
     case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
         id = 0x1F;
@@ -4162,20 +4166,37 @@ static ssize_t razer_attr_write_tracking_height(struct device *dev, struct devic
     }
 
     //ensure async cutoff is disabled
-    request = razer_chroma_misc_set_async_state(0x00);
+    request = razer_chroma_misc_set_async_state(device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
 
     //set the actual tracking height
-    request = razer_chroma_misc_set_tracking_height(mode, 0);
+    request = razer_chroma_misc_set_tracking_height(device->tracking.smart_tracking, device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
-
-    device->async.enable = 0;
 
     return count;
 }
 
+/**
+ * Placeholder Device File definition for Reading "tracking_height"
+**/
+static ssize_t razer_attr_read_tracking_height(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    struct razer_mouse_device *device = dev_get_drvdata(dev);
+
+    if (device->tracking.async_enable == 0x00) {
+        return sprintf(buf, "%d\n", device->tracking.smart_tracking);
+    }
+    else {
+        //Placeholder for a value representing disabled async cutoff
+        return sprintf(buf, "%d\n", 0xFF);
+    }
+}
+
+/**
+ * Write Device file "async_cutoff_lift"
+**/
 static ssize_t razer_attr_write_async_lift(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
@@ -4204,39 +4225,41 @@ static ssize_t razer_attr_write_async_lift(struct device *dev, struct device_att
     }
 
     //Dont set a lift lower than current land
-    if (lift <= device->async.land) {
-        device->async.land = lift - 1;
+    if (lift <= device->tracking.async_land) {
+        device->tracking.async_land = lift - 1;
     }
 
     //store value for later
-    device->async.lift = lift;
+    device->tracking.async_lift = lift;
+    device->tracking.async_enable = 0x01;
 
     //ensure async cutoff is enabled
-    request = razer_chroma_misc_set_async_state(0x01);
+    request = razer_chroma_misc_set_async_state(device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
 
     //disable smart tracking
-    request = razer_chroma_misc_set_tracking_height(0x00, 1);
+    request = razer_chroma_misc_set_tracking_height(0x00, device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
 
     //set land
-    request = razer_chroma_misc_set_async_cutoff_height(device->async.lift, device->async.land);
+    request = razer_chroma_misc_set_async_cutoff_height(device->tracking.async_lift, device->tracking.async_land);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
-
-    device->async.enable = 1;
 
     return count;
 }
 
+/**
+ * Placeholder device file definition for reading "async_cutoff_lift"
+**/
 static ssize_t razer_attr_read_async_lift(struct device *dev, struct device_attribute *attr, char *buf)
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
 
-    if (device->async.enable == 1) {
-        return sprintf(buf, "%d\n", device->async.lift);
+    if (device->tracking.async_enable == 0x01) {
+        return sprintf(buf, "%d\n", device->tracking.async_lift);
     }
     else {
         //Placeholder for a value representing disabled async cutoff
@@ -4244,6 +4267,9 @@ static ssize_t razer_attr_read_async_lift(struct device *dev, struct device_attr
     }
 }
 
+/**
+ * Write Device file "async_cutoff_land"
+**/
 static ssize_t razer_attr_write_async_land(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
@@ -4258,12 +4284,13 @@ static ssize_t razer_attr_write_async_land(struct device *dev, struct device_att
     }
 
     //Dont set a land distance higher than the lift distance
-    if (land >= device->async.lift) {
-        device->async.lift = land + 1;
+    if (land >= device->tracking.async_lift) {
+        device->tracking.async_lift = land + 1;
     }
 
     //store value for later
-    device->async.land = land;
+    device->tracking.async_land = land;
+    device->tracking.async_enable = 0x01;
 
     switch (device->usb_pid) {
     case USB_DEVICE_ID_RAZER_VIPER_MINI_SE_WIRELESS:
@@ -4276,30 +4303,31 @@ static ssize_t razer_attr_write_async_land(struct device *dev, struct device_att
     }
 
     //ensure async cutoff is enabled
-    request = razer_chroma_misc_set_async_state(0x01);
+    request = razer_chroma_misc_set_async_state(device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
 
     //disable smart tracking
-    request = razer_chroma_misc_set_tracking_height(0x00, 1);
+    request = razer_chroma_misc_set_tracking_height(0x00, device->tracking.async_enable);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
 
     //set lift
-    request = razer_chroma_misc_set_async_cutoff_height(device->async.lift, device->async.land);
+    request = razer_chroma_misc_set_async_cutoff_height(device->tracking.async_lift, device->tracking.async_land);
     request.transaction_id.id = id;
     razer_send_payload(device, &request, &response);
-
-    device->async.enable = 1;
 
     return count;
 }
 
+/**
+ * Placeholder device file definition for reading "async_cutoff_land"
+**/
 static ssize_t razer_attr_read_async_land(struct device *dev, struct device_attribute *attr, char *buf)
 {
     struct razer_mouse_device *device = dev_get_drvdata(dev);
-    if (device->async.enable == 1) {
-        return sprintf(buf, "%d\n", device->async.land);
+    if (device->tracking.async_enable == 0x01) {
+        return sprintf(buf, "%d\n", device->tracking.async_land);
     }
     else {
         //Placeholder for a value representing disabled async cutoff
@@ -4459,9 +4487,10 @@ static DEVICE_ATTR(hyperpolling_wireless_dongle_indicator_led_mode,             
 static DEVICE_ATTR(hyperpolling_wireless_dongle_pair,                           0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_pair);
 static DEVICE_ATTR(hyperpolling_wireless_dongle_unpair,                         0220, NULL, razer_attr_write_hyperpolling_wireless_dongle_unpair);
 
-static DEVICE_ATTR(tracking_height,                     0220, NULL, razer_attr_write_tracking_height);
-static DEVICE_ATTR(async_cutoff_lift,                   0660, razer_attr_read_async_lift, razer_attr_write_async_lift);
-static DEVICE_ATTR(async_cutoff_land,		        0660, razer_attr_read_async_land, razer_attr_write_async_land);
+// Tracking Height Device files
+static DEVICE_ATTR(tracking_height,                     0660, razer_attr_read_tracking_height, razer_attr_write_tracking_height);
+static DEVICE_ATTR(async_cutoff_lift,                   0660, razer_attr_read_async_lift,      razer_attr_write_async_lift);
+static DEVICE_ATTR(async_cutoff_land,		        0660, razer_attr_read_async_land,      razer_attr_write_async_land);
 
 #define REP4_DPI_UP  0x20
 #define REP4_DPI_DN  0x21
@@ -4863,9 +4892,13 @@ static void razer_mouse_init(struct razer_mouse_device *dev, struct usb_interfac
     dev->tilt_repeat_delay = 250;
     dev->tilt_repeat = 33;
 
-    // Async Cutoff
-    dev->async.lift = 0x01;
-    dev->async.land = 0x00;
+    // Set default tracking height
+    dev->tracking.smart_tracking = 0x01;
+
+    // Set Async Cutoff defaults
+    dev->tracking.async_enable = 0x00;
+    dev->tracking.async_lift = 0x0D;
+    dev->tracking.async_land = 0x0C;
 }
 
 /**

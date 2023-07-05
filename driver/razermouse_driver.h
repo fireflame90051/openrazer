@@ -148,10 +148,11 @@ struct razer_mouse_device {
 
     //asynchronous cut-off adjustment requires global vars
     struct {
-        bool enable;
-        unsigned char lift;
-        unsigned char land;
-    } async;
+        unsigned char async_enable;
+        unsigned char smart_tracking;
+        unsigned char async_lift;
+        unsigned char async_land;
+    } tracking;
 };
 
 // Mamba Key Location

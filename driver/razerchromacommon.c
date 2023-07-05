@@ -1604,13 +1604,14 @@ struct razer_report razer_chroma_misc_set_async_state(unsigned char mode)
 /**
  * Set the tracking cutoff height for Razer Viper Mini SE (Maybe More?)
 **/
-struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode, bool disable)
+struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode, unsigned char async_enable)
 {
 
     // argument 1
     // 1 = Smart Tracking
     // 4 = Async CutOff
 
+    // argument 2
     // 0 = Low
     // 1 = Med
     // 2 = High
@@ -1624,7 +1625,7 @@ struct razer_report razer_chroma_misc_set_tracking_height(unsigned char mode, bo
     report.arguments[0] = 0x00; //still trying to figure out what these are doing
     report.arguments[1] = 0x04;
 
-    if (disable == 1) {
+    if (async_enable == 0x01) {
         report.arguments[2] = 0x04;
         report.arguments[3] = 0x00;
     }
